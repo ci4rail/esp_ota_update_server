@@ -10,7 +10,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-#include <string.h>
 #include <sys/param.h>
 #include "esp_log.h"
 
@@ -61,6 +60,7 @@ static void do_update(char* url)
     };
 
     ESP_LOGI(TAG, "Downloading new firmware from %s", url);
+
     esp_err_t ret = esp_https_ota(&config);
     if (ret == ESP_OK) {
         ESP_LOGI(TAG, "Firmware upgrade successful -> Restart...");
@@ -91,10 +91,13 @@ static void get_url_and_do_update(const int sock)
 static void print_sha256(const uint8_t *image_hash, const char *label)
 {
     char hash_print[HASH_LEN * 2 + 1];
+
     hash_print[HASH_LEN * 2] = 0;
+
     for (int i = 0; i < HASH_LEN; ++i) {
         sprintf(&hash_print[i * 2], "%02x", image_hash[i]);
     }
+
     ESP_LOGI(TAG, "%s %s", label, hash_print);
 }
 
@@ -118,27 +121,34 @@ static void get_sha256_of_partitions(void)
 esp_err_t _http_event_handler(esp_http_client_event_t *evt)
 {
     switch (evt->event_id) {
-    case HTTP_EVENT_ERROR:
-        ESP_LOGD(TAG, "HTTP_EVENT_ERROR");
-        break;
-    case HTTP_EVENT_ON_CONNECTED:
-        ESP_LOGD(TAG, "HTTP_EVENT_ON_CONNECTED");
-        break;
-    case HTTP_EVENT_HEADER_SENT:
-        ESP_LOGD(TAG, "HTTP_EVENT_HEADER_SENT");
-        break;
-    case HTTP_EVENT_ON_HEADER:
-        ESP_LOGD(TAG, "HTTP_EVENT_ON_HEADER, key=%s, value=%s", evt->header_key, evt->header_value);
-        break;
-    case HTTP_EVENT_ON_DATA:
-        ESP_LOGD(TAG, "HTTP_EVENT_ON_DATA, len=%d", evt->data_len);
-        break;
-    case HTTP_EVENT_ON_FINISH:
-        ESP_LOGD(TAG, "HTTP_EVENT_ON_FINISH");
-        break;
-    case HTTP_EVENT_DISCONNECTED:
-        ESP_LOGD(TAG, "HTTP_EVENT_DISCONNECTED");
-        break;
+        case HTTP_EVENT_ERROR: {
+            ESP_LOGD(TAG, "HTTP_EVENT_ERROR");
+            break;
+        }
+        case HTTP_EVENT_ON_CONNECTED: {
+            ESP_LOGD(TAG, "HTTP_EVENT_ON_CONNECTED");
+            break;
+        }
+        case HTTP_EVENT_HEADER_SENT: {
+            ESP_LOGD(TAG, "HTTP_EVENT_HEADER_SENT");
+            break;
+        }
+        case HTTP_EVENT_ON_HEADER: {
+            ESP_LOGD(TAG, "HTTP_EVENT_ON_HEADER, key=%s, value=%s", evt->header_key, evt->header_value);
+            break;
+        }
+        case HTTP_EVENT_ON_DATA: {
+            ESP_LOGD(TAG, "HTTP_EVENT_ON_DATA, len=%d", evt->data_len);
+            break;
+        }
+        case HTTP_EVENT_ON_FINISH: {
+            ESP_LOGD(TAG, "HTTP_EVENT_ON_FINISH");
+            break;
+        }
+        case HTTP_EVENT_DISCONNECTED: {
+            ESP_LOGD(TAG, "HTTP_EVENT_DISCONNECTED");
+            break;
+        }
     }
     return ESP_OK;
 }
@@ -167,6 +177,7 @@ void ota_server_task(void *pvParameters)
         vTaskDelete(NULL);
         return;
     }
+
     int opt = 1;
     setsockopt(listen_sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
@@ -178,6 +189,7 @@ void ota_server_task(void *pvParameters)
         ESP_LOGE(TAG, "IPPROTO: %d", addr_family);
         goto CLEAN_UP;
     }
+
     ESP_LOGI(TAG, "Socket bound, port %d", port);
 
     err = listen(listen_sock, 1);
@@ -190,8 +202,9 @@ void ota_server_task(void *pvParameters)
 
         ESP_LOGI(TAG, "Socket listening");
 
-        struct sockaddr_storage source_addr; // Large enough for both IPv4 or IPv6
+        struct sockaddr_storage source_addr;
         socklen_t addr_len = sizeof(source_addr);
+
         int sock = accept(listen_sock, (struct sockaddr *)&source_addr, &addr_len);
         if (sock < 0) {
             ESP_LOGE(TAG, "Unable to accept connection: errno %d", errno);
@@ -220,6 +233,7 @@ void init_ota(void)
 {
     const esp_partition_t *running = esp_ota_get_running_partition();
     esp_ota_img_states_t ota_state;
+
     if (esp_ota_get_state_partition(running, &ota_state) == ESP_OK) {
         if (ota_state == ESP_OTA_IMG_PENDING_VERIFY) {
             // run diagnostic function ...
@@ -236,6 +250,7 @@ void init_ota(void)
 
     // Initialize NVS.
     esp_err_t err = nvs_flash_init();
+
     if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
         // 1.OTA app partition table has a smaller NVS partition size than the non-OTA
         // partition table. This size mismatch may cause NVS initialization to fail.
