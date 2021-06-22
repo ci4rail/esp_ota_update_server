@@ -19,7 +19,6 @@ limitations under the License.
 #include "lwip/sys.h"
 #include <lwip/netdb.h>
 
-#include "string.h"
 #include "nvs.h"
 #include "nvs_flash.h"
 
@@ -152,7 +151,7 @@ void ota_server_task(void *pvParameters)
     int ip_protocol = 0;
     struct sockaddr_storage dest_addr;
 
-    ESP_LOGI(TAG, "Start TCP Server...");
+    ESP_LOGI(TAG, "Start OTA Update Server...");
 
     if (addr_family == AF_INET) {
         struct sockaddr_in *dest_addr_ip4 = (struct sockaddr_in *)&dest_addr;

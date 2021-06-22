@@ -4,6 +4,8 @@ import socket
 import ssl
 import threading
 
+URL="https://192.168.7.10:8070/<binary>"
+
 class HTTPS_Server(threading.Thread):
 
     def __init__(self, ota_image_dir, server_ip, server_port):
@@ -27,6 +29,6 @@ if __name__ == '__main__':
     https_thread.start()
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect(("192.168.7.1", 1234))
-    s.send("https://192.168.7.10:8070/<binary>".encode())
+    s.send(URL.encode())
     s.close()
     https_thread.join()
