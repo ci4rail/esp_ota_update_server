@@ -286,43 +286,10 @@ static void got_ip_event_handler(void *arg, esp_event_base_t event_base,
 
 #endif //CONFIG_OTA_ETHERNET
 
-void init_ota(void)
-{
-    const esp_partition_t *running = esp_ota_get_running_partition();
-    esp_ota_img_states_t ota_state;
-
-    if (esp_ota_get_state_partition(running, &ota_state) == ESP_OK) {
-        if (ota_state == ESP_OTA_IMG_PENDING_VERIFY) {
-            // run diagnostic function ...
-            bool diagnostic_is_ok = diagnostic_cb();
-            if (diagnostic_is_ok) {
-                ESP_LOGI(TAG, "Diagnostics completed successfully! Continuing execution ...");
-                esp_ota_mark_app_valid_cancel_rollback();
-            } else {
-                ESP_LOGE(TAG, "Diagnostics failed! Start rollback to the previous version ...");
-                esp_ota_mark_app_invalid_rollback_and_reboot();
-            }
-        }
-    }
-
-    // Initialize NVS.
-    esp_err_t err = nvs_flash_init();
-
-    if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
-        // 1.OTA app partition table has a smaller NVS partition size than the non-OTA
-        // partition table. This size mismatch may cause NVS initialization to fail.
-        // 2.NVS partition contains data in new format and cannot be recognized by this version of code.
-        // If this happens, we erase NVS partition and initialize NVS again.
-        ESP_ERROR_CHECK(nvs_flash_erase());
-        err = nvs_flash_init();
-    }
-    ESP_ERROR_CHECK(err);
-
-    get_sha256_of_partitions();
-
-    ESP_ERROR_CHECK(esp_event_loop_create_default());
-
 #if CONFIG_OTA_CDC_ECM
+
+static void initialize_cdc_ecm_interface(void)
+{
     /* setup CDC-ECM interface*/
     tinyusb_config_t tusb_cfg = {
         .descriptor = NULL,
@@ -343,7 +310,12 @@ void init_ota(void)
     esp_read_mac(tusb_ethernet_over_usb_cfg.mac_address, ESP_MAC_ETH);
 
     ESP_ERROR_CHECK(tusb_ethernet_over_usb_init(tusb_ethernet_over_usb_cfg));
+}
+
 #elif CONFIG_OTA_ETHERNET
+
+static void initialize_ethernet_interface(void)
+{
     // Initialize TCP/IP network interface (should be called only once in application)
     ESP_ERROR_CHECK(esp_netif_init());
     // Create default event loop that running in background
@@ -360,13 +332,16 @@ void init_ota(void)
     eth_phy_config_t phy_config = ETH_PHY_DEFAULT_CONFIG();
     phy_config.phy_addr = CONFIG_EXAMPLE_ETH_PHY_ADDR;
     phy_config.reset_gpio_num = CONFIG_EXAMPLE_ETH_PHY_RST_GPIO;
+
 #if CONFIG_CONTROL_PHY_POWER
     gpio_pad_select_gpio(CONFIG_PIN_PHY_POWER);
     gpio_set_direction(CONFIG_PIN_PHY_POWER, GPIO_MODE_OUTPUT);
     gpio_set_level(CONFIG_PIN_PHY_POWER, 1);
     vTaskDelay(pdMS_TO_TICKS(10));
 #endif
+
 #if CONFIG_EXAMPLE_USE_INTERNAL_ETHERNET
+
     mac_config.smi_mdc_gpio_num = CONFIG_EXAMPLE_ETH_MDC_GPIO;
     mac_config.smi_mdio_gpio_num = CONFIG_EXAMPLE_ETH_MDIO_GPIO;
     esp_eth_mac_t *mac = esp_eth_mac_new_esp32(&mac_config);
@@ -383,6 +358,7 @@ void init_ota(void)
 #elif CONFIG_EXAMPLE_ETH_PHY_KSZ8081
     esp_eth_phy_t *phy = esp_eth_phy_new_ksz8081(&phy_config);
 #endif
+
 #elif CONFIG_ETH_USE_SPI_ETHERNET
     gpio_install_isr_service(0);
     spi_device_handle_t spi_handle = NULL;
@@ -439,10 +415,13 @@ void init_ota(void)
     esp_eth_mac_t *mac = esp_eth_mac_new_w5500(&w5500_config, &mac_config);
     esp_eth_phy_t *phy = esp_eth_phy_new_w5500(&phy_config);
 #endif
+
 #endif // CONFIG_ETH_USE_SPI_ETHERNET
+
     esp_eth_config_t config = ETH_DEFAULT_CONFIG(mac, phy);
     esp_eth_handle_t eth_handle = NULL;
     ESP_ERROR_CHECK(esp_eth_driver_install(&config, &eth_handle));
+
 #if !CONFIG_EXAMPLE_USE_INTERNAL_ETHERNET
     /* The SPI Ethernet module might doesn't have a burned factory MAC address, we cat to set it manually.
        02:00:00 is a Locally Administered OUI range so should not be used except when testing on a LAN under your control.
@@ -451,10 +430,56 @@ void init_ota(void)
         0x02, 0x00, 0x00, 0x12, 0x34, 0x56
     }));
 #endif
+
     /* attach Ethernet driver to TCP/IP stack */
     ESP_ERROR_CHECK(esp_netif_attach(eth_netif, esp_eth_new_netif_glue(eth_handle)));
     /* start Ethernet driver state machine */
     ESP_ERROR_CHECK(esp_eth_start(eth_handle));
+}
+
+#endif 
+
+
+void init_ota(void)
+{
+    const esp_partition_t *running = esp_ota_get_running_partition();
+    esp_ota_img_states_t ota_state;
+
+    if (esp_ota_get_state_partition(running, &ota_state) == ESP_OK) {
+        if (ota_state == ESP_OTA_IMG_PENDING_VERIFY) {
+            // run diagnostic function ...
+            bool diagnostic_is_ok = diagnostic_cb();
+            if (diagnostic_is_ok) {
+                ESP_LOGI(TAG, "Diagnostics completed successfully! Continuing execution ...");
+                esp_ota_mark_app_valid_cancel_rollback();
+            } else {
+                ESP_LOGE(TAG, "Diagnostics failed! Start rollback to the previous version ...");
+                esp_ota_mark_app_invalid_rollback_and_reboot();
+            }
+        }
+    }
+
+    // Initialize NVS.
+    esp_err_t err = nvs_flash_init();
+
+    if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+        // 1.OTA app partition table has a smaller NVS partition size than the non-OTA
+        // partition table. This size mismatch may cause NVS initialization to fail.
+        // 2.NVS partition contains data in new format and cannot be recognized by this version of code.
+        // If this happens, we erase NVS partition and initialize NVS again.
+        ESP_ERROR_CHECK(nvs_flash_erase());
+        err = nvs_flash_init();
+    }
+    ESP_ERROR_CHECK(err);
+
+    get_sha256_of_partitions();
+
+    ESP_ERROR_CHECK(esp_event_loop_create_default());
+
+#if CONFIG_OTA_CDC_ECM
+    initialize_cdc_ecm_interface();
+#elif CONFIG_OTA_ETHERNET
+    initialize_ethernet_interface();
 #endif
 
     /* start ota task */
