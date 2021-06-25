@@ -21,5 +21,4 @@ If the firmware has been updated with the ota update server, the new firmware mu
 
 ## Future Features
 
- - Update via ethernet interface (+ example)
- - Dynamic IP-Address (DHCP)
+ - Dynamic IP-Address for the CDC-ECM Interface (DHCP)

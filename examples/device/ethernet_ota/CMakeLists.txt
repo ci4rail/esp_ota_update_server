@@ -11,4 +11,4 @@ set(OTA_CERT_PATH /server_certs/ca_cert.pem)
 set(OTA_SERVER_CERT_H /server_certs)
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
-project(cdc_ecm_ota_example)
+project(ethernet_ota_example)

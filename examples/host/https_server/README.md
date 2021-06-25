@@ -1,7 +1,7 @@
 # HTTPS Server Example
 
-This example shall be executed on the host. It creates a https server from which the ESP32S2 can download the new firmware.
+This example shall be executed on the host. It creates a https server from which the ESP32(S2) can download the new firmware.
 
-# Usage
+## Usage
 
 See examples/README.md
