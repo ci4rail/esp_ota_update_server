@@ -49,9 +49,9 @@ static const char *TAG = "ota-server";
 #define OTA_THREAD_STACK_SIZE 8192
 
 #if CONFIG_OTA_CDC_ECM
-/* network parameters of this MCU */
-static const ip_addr_t ipaddr  = IPADDR4_INIT_BYTES(192, 168, 7, 1);
-static const ip_addr_t netmask = IPADDR4_INIT_BYTES(255, 255, 255, 0);
+/* configure cdc-ecm driver to use dhcp */
+static const ip_addr_t ipaddr  = IPADDR4_INIT_BYTES(0, 0, 0, 0);
+static const ip_addr_t netmask = IPADDR4_INIT_BYTES(0, 0, 0, 0);
 static const ip_addr_t gateway = IPADDR4_INIT_BYTES(0, 0, 0, 0);
 #endif
 

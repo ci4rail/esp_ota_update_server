@@ -19,7 +19,7 @@ examples
 
 ## Usage
 
-Copy the example of your choice next to the folder of the ota update server component. Build it with the esp-idf framework and flash the binary onto your ESP32S2 board. Connect the microcontroller via USB with the host computer. For the IP-Address assignment check the README of the corresponding example.
+Copy the example of your choice next to the folder of the ota update server component. Build it with the esp-idf framework and flash the binary onto your ESP32(S2) board. Connect the microcontroller via USB with the host computer. For the IP-Address assignment check the README of the corresponding example.
 After the IP-Address(es) have been set, copy the new firmware binary to the https_server folder and adapt the https_server.py file. Insert the binary name in the URL string variable.
 Run the https server:
 ```

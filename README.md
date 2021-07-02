@@ -18,7 +18,3 @@ For more information see example folder.
 ### Diagnostic Callback
 
 If the firmware has been updated with the ota update server, the new firmware must provide the diagnostic_cb() function, which should perform some diagnostic processes on the first run and decide if everything is ok and the application should start up. If that is the case, the callback should return true. If a problem is detected, the callback should return false to indicate that a rollback should be performed.
-
-## Future Features
-
- - Dynamic IP-Address for the CDC-ECM Interface (DHCP)

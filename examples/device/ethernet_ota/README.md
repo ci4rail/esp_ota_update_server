@@ -20,10 +20,14 @@ The ESP32s network interface acquire its IP-Address from a DHCP server running o
 ```
 sudo apt install isc-dhcp-server 
 ```
+Then specify the interfaces to listen on in /etc/default/isc-dhcp-server:
+```
+INTERFACESv4="<netif name>"
+```
 Afterwards the DHCP server should be configured by adding the following lines to /etc/dhcp/dhcpd.conf:
 ```
 subnet 192.168.7.0 netmask 255.255.255.0 {
-  range 192.168.7.1 192.168.7.9;
+  range 192.168.7.1 192.168.7.1;
 }
 ```
 With `sudo systemctl restart isc-dhcp-server` the DHCP server can be restarted and the new configuration can be applied.
@@ -39,7 +43,6 @@ I (5504) ota-server: ETHMASK:255.255.255.0
 I (5504) ota-server: ETHGW:192.168.7.1
 I (5514) ota-server: ~~~~~~~~~~~
 ```
-If another IP-Address is assigned, the IP-Address in https_server.py has to be adapted.
 
 ## Settings for OLIMEX board ESP32-PoE-ISO
 
