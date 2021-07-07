@@ -4,6 +4,10 @@
 
 This component provides a tcp server which awaits a message on port 1234 with a URL from which the ESP32S2 shall download a new firmware binary and write it to one of its ota partitions.
 
+## EEPROM Read
+
+In the configuration, the EEPROM Read feature can be enabled and disabled. If the feature is enabled, the tcp server sends the content of a external EEPROM to the connected client directly after the connection was accepted and before the client shall send the URL. The EEPROM is connected via I2C with the ESP32(S2). The I2C connection can be configured in the configuration menu.
+
 ## Usage
 
 An application which integrates the ota update server have to fulfill the following requirements:

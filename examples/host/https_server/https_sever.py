@@ -5,6 +5,7 @@ import ssl
 import threading
 
 URL="https://192.168.7.10:8070/<binary>"
+EEPROM_SIZE=512
 
 class HTTPS_Server(threading.Thread):
 
@@ -27,6 +28,7 @@ if __name__ == '__main__':
     https_thread.start()
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect(("192.168.7.1", 1234))
+    data = s.recv(EEPROM_SIZE)
     s.send(URL.encode())
     s.close()
     https_thread.join()
