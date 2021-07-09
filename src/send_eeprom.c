@@ -44,7 +44,7 @@ static esp_err_t i2c_master_driver_initialize(void)
     return i2c_param_config(i2c_port, &conf);
 }
 
-static int i2c_read_eeprom(void)
+static esp_err_t i2c_read_eeprom(void)
 {
     int chip_addr = 0x50;
     int data_addr = 0x00;
@@ -81,18 +81,23 @@ static int i2c_read_eeprom(void)
     }
     i2c_cmd_link_delete(cmd);
     i2c_driver_delete(i2c_port);
-    return 0;
+    return ret;
 }
 
 void send_eeprom(const int sock)
 {
     eeprom_data = malloc(eeprom_len);
-    i2c_read_eeprom();
-    
-    int written = send(sock, eeprom_data, eeprom_len, 0);
-    if (written < 0) {
-        ESP_LOGE(TAG, "Error occurred during sending: errno %d", errno);
+    if(eeprom_data == NULL) {
+        ESP_LOGW(TAG, "Could not allocate memory!");
+        return;
     }
 
+    if(i2c_read_eeprom() == ESP_OK) {
+        int written = send(sock, eeprom_data, eeprom_len, 0);
+        if (written < 0) {
+            ESP_LOGE(TAG, "Error occurred during sending: errno %d", errno);
+        }
+    }
+    
     free(eeprom_data);
 }
