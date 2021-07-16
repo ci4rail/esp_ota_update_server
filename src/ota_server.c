@@ -26,11 +26,11 @@ limitations under the License.
 #endif
 #include "send_eeprom.h"
 #include "ota_update.h"
+#include "esp_task_wdt.h"
 #include <errno.h>
 
 static const char *TAG = "ota-server";
 
-#define OTA_SERVER_PORT 1234
 #define OTA_THREAD_STACK_SIZE 8192
 
 #if CONFIG_OTA_CDC_ECM
@@ -47,6 +47,12 @@ void ota_server_task(void *pvParameters)
     int port = (int)pvParameters;
     int ip_protocol = 0;
     struct sockaddr_storage dest_addr;
+    int timeout;
+    struct pollfd fds[1];
+    nfds_t nfds;
+
+    /* Add task to watchdog */
+    ESP_ERROR_CHECK(esp_task_wdt_add(NULL));
 
     ESP_LOGI(TAG, "Start OTA Update Server...");
 
@@ -85,34 +91,58 @@ void ota_server_task(void *pvParameters)
         goto CLEAN_UP;
     }
 
+    ESP_LOGI(TAG, "Socket listening");
+
+    /* set timeout value */
+    timeout = 3000;
+    /* register socket to wait to become ready */
+    memset(fds, 0 , sizeof(fds));
+    fds[0].fd = listen_sock;
+    fds[0].events = POLLIN;
+    /* set number of descriptors in fds */
+    nfds = 1;
+
     while (1) {
+        /* wait for listen_sock become ready to accept a connection */
+        int ret =  poll(fds, nfds, timeout);
 
-        ESP_LOGI(TAG, "Socket listening");
+        if(ret > 0) {
+            struct sockaddr_storage source_addr;
+            socklen_t addr_len = sizeof(source_addr);
 
-        struct sockaddr_storage source_addr;
-        socklen_t addr_len = sizeof(source_addr);
+            ESP_ERROR_CHECK(esp_task_wdt_reset());
 
-        int sock = accept(listen_sock, (struct sockaddr *)&source_addr, &addr_len);
-        if (sock < 0) {
-            ESP_LOGE(TAG, "Unable to accept connection: errno %d", errno);
-            break;
-        }
-        
-        // Convert ip address to string
-        if (source_addr.ss_family == PF_INET) {
-            inet_ntoa_r(((struct sockaddr_in *)&source_addr)->sin_addr, addr_str, sizeof(addr_str) - 1);
-        }
+            ESP_LOGI(TAG, "Selected");
 
-        ESP_LOGI(TAG, "Socket accepted ip address: %s", addr_str);
+            int sock = accept(listen_sock, (struct sockaddr *)&source_addr, &addr_len);
+            if (sock < 0) {
+                ESP_LOGE(TAG, "Unable to accept connection: errno %d", errno);
+                break;
+            }
+
+            // Convert ip address to string
+            if (source_addr.ss_family == PF_INET) {
+                inet_ntoa_r(((struct sockaddr_in *)&source_addr)->sin_addr, addr_str, sizeof(addr_str) - 1);
+            }
+
+            ESP_LOGI(TAG, "Socket accepted ip address: %s", addr_str);
 
 #if CONFIG_READ_EEPROM
-        send_eeprom(sock);
+            send_eeprom(sock);
 #endif //CONFIG_READ_EEPROM
 
-        get_url_and_do_update(sock);
+            get_url_and_do_update(sock);
 
-        shutdown(sock, 0);
-        close(sock);
+            shutdown(sock, 0);
+            close(sock);
+        }
+        else if(ret == -1) {
+            ESP_LOGE(TAG, "poll() error: errno %d", errno);
+            break;
+        }
+        else {
+            ESP_ERROR_CHECK(esp_task_wdt_reset());
+        }
     }
 
 CLEAN_UP:
@@ -305,7 +335,7 @@ static void initialize_ethernet_interface(void)
 
     esp_eth_config_t config = ETH_DEFAULT_CONFIG(mac, phy);
     esp_eth_handle_t eth_handle = NULL;
-    ESP_ERROR_CHECK(esp_eth_driver_install(&config, &eth_handle));
+    ESP_ERROR_CHECK(esp_eth_driver_instmainall(&config, &eth_handle));
 
 #if !CONFIG_USE_INTERNAL_ETHERNET
     /* The SPI Ethernet module might doesn't have a burned factory MAC address, we cat to set it manually.
@@ -327,8 +357,6 @@ static void initialize_ethernet_interface(void)
 
 void init_ota(void)
 {
-    check_current_partition();
-
     initialize_nvs();
 
     get_sha256_of_partitions();
@@ -342,5 +370,7 @@ void init_ota(void)
 #endif
 
     /* start ota task */
-    xTaskCreate(&ota_server_task, "ota_server", OTA_THREAD_STACK_SIZE, (void*)OTA_SERVER_PORT, 5, NULL);
+    xTaskCreate(&ota_server_task, "ota_server", OTA_THREAD_STACK_SIZE, (void*)CONFIG_OTA_SERVER_PORT, 5, NULL);
+
+    check_current_partition();
 }
