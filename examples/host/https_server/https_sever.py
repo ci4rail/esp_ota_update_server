@@ -30,6 +30,7 @@ if __name__ == '__main__':
     time.sleep(2)
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect(("192.168.7.1", 1234))
+    # remove this line, if EEPROM Read was disabled in the configuration menu
     data = s.recv(EEPROM_SIZE)
     s.send(URL.encode())
     s.close()

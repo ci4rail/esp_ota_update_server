@@ -10,7 +10,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-#include <sys/param.h>
 #include "esp_log.h"
 #include "lwip/err.h"
 #include "lwip/sockets.h"
@@ -100,7 +99,7 @@ void ota_server_task(void *pvParameters)
     fds[0].fd = listen_sock;
     fds[0].events = POLLIN;
     /* set number of descriptors in fds */
-    nfds = 1;
+    nfds = sizeof(fds)/sizeof(fds[0]);
 
     while (1) {
         /* wait for listen_sock become ready to accept a connection */
@@ -140,9 +139,8 @@ void ota_server_task(void *pvParameters)
             ESP_LOGE(TAG, "poll() error: errno %d", errno);
             break;
         }
-        else {
-            ESP_ERROR_CHECK(esp_task_wdt_reset());
-        }
+        
+        ESP_ERROR_CHECK(esp_task_wdt_reset());
     }
 
 CLEAN_UP:
@@ -335,7 +333,7 @@ static void initialize_ethernet_interface(void)
 
     esp_eth_config_t config = ETH_DEFAULT_CONFIG(mac, phy);
     esp_eth_handle_t eth_handle = NULL;
-    ESP_ERROR_CHECK(esp_eth_driver_instmainall(&config, &eth_handle));
+    ESP_ERROR_CHECK(esp_eth_driver_install(&config, &eth_handle));
 
 #if !CONFIG_USE_INTERNAL_ETHERNET
     /* The SPI Ethernet module might doesn't have a burned factory MAC address, we cat to set it manually.

@@ -2,7 +2,7 @@
 
 ## Description
 
-This component provides a tcp server which awaits a message on port 1234 with a URL from which the ESP32S2 shall download a new firmware binary and write it to one of its ota partitions.
+This component provides a tcp server which awaits a message on port 1234 with a URL from which the ESP32S2 shall download a new firmware binary and write it to one of its ota partitions. The port to listen on can be adapted via the setting CONFIG_OTA_SERVER_PORT in the configuration menu.
 
 ## EEPROM Read
 
