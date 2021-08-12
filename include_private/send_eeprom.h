@@ -13,6 +13,10 @@ limitations under the License.
 #ifndef _SEND_EEPROM_H_
 #define _SEND_EEPROM_H_
 
+#if CONFIG_READ_EEPROM
+
 void send_eeprom(const int sock);
+
+#endif //CONFIG_READ_EEPROM
 
 #endif //_SEND_EEPROM_H_

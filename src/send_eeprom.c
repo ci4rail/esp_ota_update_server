@@ -10,6 +10,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+#if CONFIG_READ_EEPROM
+
 #include "driver/i2c.h"
 #include "esp_log.h"
 #include "lwip/sockets.h"
@@ -101,3 +103,5 @@ void send_eeprom(const int sock)
     
     free(eeprom_data);
 }
+
+#endif //CONFIG_READ_EEPROM
